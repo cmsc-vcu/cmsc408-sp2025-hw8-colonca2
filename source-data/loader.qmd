@@ -1,6 +1,6 @@
 ---
 title: Loader script for Homework 8
-author: John Leonard
+author: Carlos Colon
 date: last-modified
 format:
     html:
