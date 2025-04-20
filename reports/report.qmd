@@ -99,8 +99,9 @@ select
 from
   world_bank_data.wdi_country
 where
-  `Country Code` is null
-  or Region = 'Aggregates'
+  `Short Name` = 'World'
+     or Region = 'Aggregates'
+     or `Country Code` is null
 """)
 
 ```
@@ -310,18 +311,15 @@ order by
 run_sql_and_return_html(cnx,"""
 select
   `Short Name`,
-  `Long Name`,
   Region,
   `Income Group`
 from
-  wdi_country
+  world_bank_data.wdi_country
 where
   `Income Group` is null
 order by
   `Short Name`
 """)
-
-
 
 ```
 
@@ -335,10 +333,9 @@ order by
 
 execute_ddl(cnx,"""
 update wdi_country
-set `Income Group` = 'High income'
-where `Short Name` = 'Kuwait'
+set `Income Group` = 'Upper middle income'
+where `Short Name` = 'Venezuela, RB'
 """)
-
 
 ```
 ```{python}
@@ -351,9 +348,8 @@ select
 from
   wdi_country
 where
-  `Short Name` = 'Kuwait'
+  `Short Name` = 'Venezuela, RB'
 """)
-
 
 ```
 
@@ -371,7 +367,7 @@ select
   `Income Group`,
   count(*) as num_countries
 from
-  wdi_country
+  world_bank_data.wdi_country
 group by
   Region, `Income Group`
 order by
@@ -405,13 +401,12 @@ select
   count(case when `Income Group` is null then 1 end) as unknown_income,
   count(*) as total
 from
-  wdi_country
+  world_bank_data.wdi_country
 group by
   Region
 order by
   Region
 """)
-
 
 ```
 
@@ -504,10 +499,10 @@ order by
 
 run_sql_and_return_html(cnx,"""
 with regions as (
-  select distinct Region from wdi_country
+  select distinct Region from world_bank_data.wdi_country
 ),
 income_groups as (
-  select distinct `Income Group` from wdi_country
+  select distinct `Income Group` from world_bank_data.wdi_country
 ),
 all_combinations as (
   select r.Region, i.`Income Group`
@@ -516,16 +511,16 @@ all_combinations as (
 ),
 existing_combinations as (
   select distinct Region, `Income Group`
-  from wdi_country
+  from world_bank_data.wdi_country
 )
 select
   a.Region,
-  a.`Income Group`
+  a.`Income Group`,
+  'Missing' as status
 from
   all_combinations a
 left join existing_combinations e
-  on a.Region = e.Region
- and a.`Income Group` = e.`Income Group`
+  on a.Region = e.Region and a.`Income Group` = e.`Income Group`
 where
   e.Region is null
 order by
@@ -646,9 +641,9 @@ run_sql_and_return_html(cnx,"""
 select
   `Income Group`,
   count(*) as num_countries,
-  round(count(*) * 100.0 / (select count(*) from wdi_country), 2) as pct_of_total
+  round(count(*) * 100.0 / (select count(*) from world_bank_data.wdi_country), 1) as pct_of_total
 from
-  wdi_country
+  world_bank_data.wdi_country
 group by
   `Income Group`
 order by
