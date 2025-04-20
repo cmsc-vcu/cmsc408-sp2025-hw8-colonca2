@@ -99,9 +99,9 @@ select
 from
   world_bank_data.wdi_country
 where
-  `Short Name` = 'World'
-     or Region = 'Aggregates'
-     or `Country Code` is null
+  Region is null
+  or Region = 'Aggregates'
+  or `Short Name` = 'World'
 """)
 
 ```
@@ -319,7 +319,9 @@ where
   `Income Group` is null
 order by
   `Short Name`
+limit 1
 """)
+
 
 ```
 
@@ -332,10 +334,11 @@ order by
 ## NOTE - if you get this wrong, all subsequent tables will be wrong!
 
 execute_ddl(cnx,"""
-update wdi_country
-set `Income Group` = 'Upper middle income'
+update world_bank_data.wdi_country
+set `Income Group` = 'High income'
 where `Short Name` = 'Venezuela, RB'
 """)
+
 
 ```
 ```{python}
@@ -346,10 +349,11 @@ select
   `Short Name`,
   `Income Group`
 from
-  wdi_country
+  world_bank_data.wdi_country
 where
   `Short Name` = 'Venezuela, RB'
 """)
+
 
 ```
 
@@ -362,14 +366,14 @@ where
 ## (skills: select, aggregate, group by, order by)
 
 run_sql_and_return_html(cnx,"""
-select
+select distinct
   Region,
   `Income Group`,
-  count(*) as num_countries
+  count(*) over (partition by Region, `Income Group`) as num_countries
 from
   world_bank_data.wdi_country
-group by
-  Region, `Income Group`
+where
+  Region is not null and `Income Group` is not null
 order by
   Region, `Income Group`
 """)
@@ -394,11 +398,11 @@ order by
 run_sql_and_return_html(cnx,"""
 select
   Region,
-  count(case when `Income Group` = 'High income' then 1 end) as high_income,
-  count(case when `Income Group` = 'Upper middle income' then 1 end) as upper_middle_income,
-  count(case when `Income Group` = 'Lower middle income' then 1 end) as lower_middle_income,
-  count(case when `Income Group` = 'Low income' then 1 end) as low_income,
-  count(case when `Income Group` is null then 1 end) as unknown_income,
+  count(case when `Income Group` = 'High income' then 1 end) as "High income",
+  count(case when `Income Group` = 'Upper middle income' then 1 end) as "Upper middle income",
+  count(case when `Income Group` = 'Lower middle income' then 1 end) as "Lower middle income",
+  count(case when `Income Group` = 'Low income' then 1 end) as "Low income",
+  count(case when `Income Group` is null then 1 end) as "Unknown",
   count(*) as total
 from
   world_bank_data.wdi_country
@@ -506,10 +510,9 @@ income_groups as (
 ),
 all_combinations as (
   select r.Region, i.`Income Group`
-  from regions r
-  cross join income_groups i
+  from regions r cross join income_groups i
 ),
-existing_combinations as (
+actuals as (
   select distinct Region, `Income Group`
   from world_bank_data.wdi_country
 )
@@ -519,12 +522,11 @@ select
   'Missing' as status
 from
   all_combinations a
-left join existing_combinations e
-  on a.Region = e.Region and a.`Income Group` = e.`Income Group`
+left join actuals act
+  on a.Region = act.Region and a.`Income Group` = act.`Income Group`
 where
-  e.Region is null
-order by
-  a.Region, a.`Income Group`
+  act.Region is null
+order by a.Region, a.`Income Group`
 """)
 
 ```
@@ -649,6 +651,7 @@ group by
 order by
   num_countries desc
 """)
+
 
 ```
 
