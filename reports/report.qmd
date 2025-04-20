@@ -92,14 +92,17 @@ List all non-countries.
 
 run_sql_and_return_html(cnx,"""
 select
-  *
+  `Country Code`,
+  `Short Name`,
+  Region,
+  `Income Group`
 from
   world_bank_data.wdi_country
 where
-  country_type != 'Country'
-   or country_code is null
-   or country_region = 'Aggregates'
+  `Country Code` is null
+  or Region = 'Aggregates'
 """)
+
 ```
 
 ## Task 4
@@ -122,13 +125,15 @@ drop table if exists wdi_country;
 
 ```{python}
 # create table
+# Create the filtered table using corrected column names
 execute_ddl(cnx,"""
 create table wdi_country as
 select *
 from world_bank_data.wdi_country
-where country_code is not null
-  and country_region != 'Aggregates';
+where `Country Code` is not null
+  and Region != 'Aggregates';
 """)
+
 ```
 
 ```{python}
@@ -137,6 +142,7 @@ run_sql_and_return_html(cnx,"""
 select count(*) as "Country Count"
 from wdi_country
 """)
+
 ```
 
 ## Task 5
@@ -147,9 +153,8 @@ According to the World Bank, in 2020 there were how many countries in the world?
 ## (skills: select, aggregate)
 
 run_sql_and_return_html(cnx,"""
-select count(*) as "Countries in 2020"
+select count(*) as "Countries (Filtered)"
 from wdi_country
-where last_updated_year = 2020
 """)
 
 ```
@@ -166,10 +171,11 @@ What are all unique values of region in the wdi_country table?
 ## (skills: select, aggregate, order by)
 
 run_sql_and_return_html(cnx,"""
-select distinct country_region
+select distinct Region
 from wdi_country
-order by country_region
+order by Region
 """)
+
 
 ```
 
@@ -183,12 +189,12 @@ How many countries are in each region?
 
 run_sql_and_return_html(cnx,"""
 select
-  country_region,
+  Region,
   count(*) as num_countries
 from
   wdi_country
 group by
-  country_region
+  Region
 order by
   num_countries desc
 """)
@@ -206,15 +212,16 @@ List the country full names and regions for all countries in north america.
 
 run_sql_and_return_html(cnx,"""
 select
-  country_full_name,
-  country_region
+  `Long Name`,
+  Region
 from
   wdi_country
 where
-  lower(country_region) = 'north america'
+  lower(Region) = 'north america'
 order by
-  country_full_name
+  `Long Name`
 """)
+
 
 ```
 
@@ -227,14 +234,15 @@ order by
 
 run_sql_and_return_html(cnx,"""
 select
-  country_region,
-  country_short_name,
-  country_full_name
+  Region,
+  `Short Name`,
+  `Long Name`
 from
   wdi_country
 where
-  country_short_name = 'Qatar'
+  `Short Name` = 'Qatar'
 """)
+
 
 ```
 
@@ -248,20 +256,21 @@ where
 
 run_sql_and_return_html(cnx,"""
 select
-  country_code,
-  country_short_name,
-  country_abbr,
-  country_wb_abbr,
-  country_region
+  `Country Code`,
+  `Short Name`,
+  `2-alpha code`,
+  `WB-2 code`,
+  Region
 from
   wdi_country
 where
-  country_abbr is not null
-  and country_wb_abbr is not null
-  and country_abbr != country_wb_abbr
+  `2-alpha code` is not null
+  and `WB-2 code` is not null
+  and `2-alpha code` != `WB-2 code`
 order by
-  country_short_name
+  `Short Name`
 """)
+
 
 ```
 
@@ -275,15 +284,16 @@ order by
 
 run_sql_and_return_html(cnx,"""
 select
-  country_income_group,
+  `Income Group`,
   count(*) as num_countries
 from
   wdi_country
 group by
-  country_income_group
+  `Income Group`
 order by
   num_countries desc
 """)
+
 
 
 ```
@@ -299,17 +309,18 @@ order by
 
 run_sql_and_return_html(cnx,"""
 select
-  country_short_name,
-  country_full_name,
-  country_region,
-  country_income_group
+  `Short Name`,
+  `Long Name`,
+  Region,
+  `Income Group`
 from
   wdi_country
 where
-  country_income_group is null
+  `Income Group` is null
 order by
-  country_short_name
+  `Short Name`
 """)
+
 
 
 ```
@@ -324,9 +335,10 @@ order by
 
 execute_ddl(cnx,"""
 update wdi_country
-set country_income_group = 'High income'
-where country_short_name = 'Kuwait'
+set `Income Group` = 'High income'
+where `Short Name` = 'Kuwait'
 """)
+
 
 ```
 ```{python}
@@ -334,13 +346,14 @@ where country_short_name = 'Kuwait'
 
 run_sql_and_return_html(cnx,"""
 select
-  country_short_name,
-  country_income_group
+  `Short Name`,
+  `Income Group`
 from
   wdi_country
 where
-  country_short_name = 'Kuwait'
+  `Short Name` = 'Kuwait'
 """)
+
 
 ```
 
@@ -354,17 +367,16 @@ where
 
 run_sql_and_return_html(cnx,"""
 select
-  country_region,
-  country_income_group,
+  Region,
+  `Income Group`,
   count(*) as num_countries
 from
   wdi_country
 group by
-  country_region, country_income_group
+  Region, `Income Group`
 order by
-  country_region, country_income_group
+  Region, `Income Group`
 """)
-
 
 ```
 
@@ -385,20 +397,21 @@ order by
 
 run_sql_and_return_html(cnx,"""
 select
-  country_region,
-  count(case when country_income_group = 'High income' then 1 end) as high_income,
-  count(case when country_income_group = 'Upper middle income' then 1 end) as upper_middle_income,
-  count(case when country_income_group = 'Lower middle income' then 1 end) as lower_middle_income,
-  count(case when country_income_group = 'Low income' then 1 end) as low_income,
-  count(case when country_income_group is null then 1 end) as unknown_income,
+  Region,
+  count(case when `Income Group` = 'High income' then 1 end) as high_income,
+  count(case when `Income Group` = 'Upper middle income' then 1 end) as upper_middle_income,
+  count(case when `Income Group` = 'Lower middle income' then 1 end) as lower_middle_income,
+  count(case when `Income Group` = 'Low income' then 1 end) as low_income,
+  count(case when `Income Group` is null then 1 end) as unknown_income,
   count(*) as total
 from
   wdi_country
 group by
-  country_region
+  Region
 order by
-  country_region
+  Region
 """)
+
 
 ```
 
@@ -419,14 +432,14 @@ order by
 run_sql_and_return_html(cnx,"""
 select
   count(*) as num_low_income,
-  country_region,
-  country_income_group
+  Region,
+  `Income Group`
 from
   wdi_country
 where
-  country_income_group = 'Low income'
+  `Income Group` = 'Low income'
 group by
-  country_region, country_income_group
+  Region, `Income Group`
 order by
   num_low_income desc
 limit 1
@@ -447,27 +460,26 @@ limit 1
 
 run_sql_and_return_html(cnx,"""
 select
-  country_code,
-  country_short_name,
-  country_region,
-  country_income_group
+  `Country Code`,
+  `Short Name`,
+  Region,
+  `Income Group`
 from
   wdi_country
 where
-  country_region = (
-    select country_region
+  Region = (
+    select Region
     from wdi_country
-    where country_code = 'MHL'
+    where `Country Code` = 'MHL'
   )
-  and country_income_group = (
-    select country_income_group
+  and `Income Group` = (
+    select `Income Group`
     from wdi_country
-    where country_code = 'MHL'
+    where `Country Code` = 'MHL'
   )
 order by
-  country_short_name
+  `Short Name`
 """)
-
 
 ```
 
@@ -492,34 +504,33 @@ order by
 
 run_sql_and_return_html(cnx,"""
 with regions as (
-  select distinct country_region from wdi_country
+  select distinct Region from wdi_country
 ),
 income_groups as (
-  select distinct country_income_group from wdi_country
+  select distinct `Income Group` from wdi_country
 ),
 all_combinations as (
-  select r.country_region, i.country_income_group
+  select r.Region, i.`Income Group`
   from regions r
   cross join income_groups i
 ),
 existing_combinations as (
-  select distinct country_region, country_income_group
+  select distinct Region, `Income Group`
   from wdi_country
 )
 select
-  a.country_region,
-  a.country_income_group
+  a.Region,
+  a.`Income Group`
 from
   all_combinations a
 left join existing_combinations e
-  on a.country_region = e.country_region
- and a.country_income_group = e.country_income_group
+  on a.Region = e.Region
+ and a.`Income Group` = e.`Income Group`
 where
-  e.country_region is null
+  e.Region is null
 order by
-  a.country_region, a.country_income_group
+  a.Region, a.`Income Group`
 """)
-
 
 ```
 
@@ -544,32 +555,32 @@ order by
 run_sql_and_return_html(cnx,"""
 with base as (
   select
-    country_region,
-    country_income_group,
+    Region,
+    `Income Group`,
     count(*) as num_countries
   from wdi_country
-  group by country_region, country_income_group
+  group by Region, `Income Group`
 ),
 region_totals as (
   select
-    country_region,
+    Region,
     sum(num_countries) as region_total
   from base
-  group by country_region
+  group by Region
 ),
 income_totals as (
   select
-    country_income_group,
+    `Income Group`,
     sum(num_countries) as income_total
   from base
-  group by country_income_group
+  group by `Income Group`
 ),
 grand_total as (
   select sum(num_countries) as total_countries from base
 )
 select
-  b.country_region,
-  b.country_income_group,
+  b.Region,
+  b.`Income Group`,
   b.num_countries,
   rt.region_total,
   it.income_total,
@@ -577,14 +588,12 @@ select
   round(b.num_countries * 100.0 / gt.total_countries, 2) as pct_of_total
 from
   base b
-  join region_totals rt on b.country_region = rt.country_region
-  join income_totals it on b.country_income_group = it.country_income_group
+  join region_totals rt on b.Region = rt.Region
+  join income_totals it on b.`Income Group` = it.`Income Group`
   cross join grand_total gt
 order by
-  b.country_region, b.country_income_group
+  b.Region, b.`Income Group`
 """)
-
-
 
 ```
 
@@ -598,30 +607,29 @@ order by
 run_sql_and_return_html(cnx,"""
 with base as (
   select
-    country_region,
-    country_income_group,
+    Region,
+    `Income Group`,
     count(*) as num_countries
   from wdi_country
-  group by country_region, country_income_group
+  group by Region, `Income Group`
 ),
 grand_total as (
   select count(*) as total from wdi_country
 )
 select
-  country_region,
-  round(sum(case when country_income_group = 'High income' then 1 else 0 end) * 100.0 / total, 2) as High_income,
-  round(sum(case when country_income_group = 'Upper middle income' then 1 else 0 end) * 100.0 / total, 2) as Upper_middle_income,
-  round(sum(case when country_income_group = 'Lower middle income' then 1 else 0 end) * 100.0 / total, 2) as Lower_middle_income,
-  round(sum(case when country_income_group = 'Low income' then 1 else 0 end) * 100.0 / total, 2) as Low_income,
-  round(sum(case when country_income_group is null then 1 else 0 end) * 100.0 / total, 2) as Unknown
+  Region,
+  round(sum(case when `Income Group` = 'High income' then 1 else 0 end) * 100.0 / total, 2) as High_income,
+  round(sum(case when `Income Group` = 'Upper middle income' then 1 else 0 end) * 100.0 / total, 2) as Upper_middle_income,
+  round(sum(case when `Income Group` = 'Lower middle income' then 1 else 0 end) * 100.0 / total, 2) as Lower_middle_income,
+  round(sum(case when `Income Group` = 'Low income' then 1 else 0 end) * 100.0 / total, 2) as Low_income,
+  round(sum(case when `Income Group` is null then 1 else 0 end) * 100.0 / total, 2) as Unknown
 from
   base, grand_total
 group by
-  country_region, total
+  Region, total
 order by
-  country_region
+  Region
 """)
-
 
 ```
 
@@ -636,13 +644,13 @@ order by
 
 run_sql_and_return_html(cnx,"""
 select
-  country_income_group,
+  `Income Group`,
   count(*) as num_countries,
   round(count(*) * 100.0 / (select count(*) from wdi_country), 2) as pct_of_total
 from
   wdi_country
 group by
-  country_income_group
+  `Income Group`
 order by
   num_countries desc
 """)
