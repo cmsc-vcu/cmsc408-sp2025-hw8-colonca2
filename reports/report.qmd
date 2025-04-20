@@ -396,12 +396,12 @@ order by
 run_sql_and_return_html(cnx,"""
 select
   Region,
-  count(case when `Income Group` = 'High income' then 1 end) as "High income",
-  count(case when `Income Group` = 'Upper middle income' then 1 end) as "Upper middle income",
-  count(case when `Income Group` = 'Lower middle income' then 1 end) as "Lower middle income",
-  count(case when `Income Group` = 'Low income' then 1 end) as "Low income",
-  count(case when `Income Group` is null then 1 end) as "Other",
-  count(*) as "Total"
+  count(case when `Income Group` = 'High income' then 1 end) * 1.0 as "High income",
+  count(case when `Income Group` = 'Upper middle income' then 1 end) * 1.0 as "Upper middle income",
+  count(case when `Income Group` = 'Lower middle income' then 1 end) * 1.0 as "Lower middle income",
+  count(case when `Income Group` = 'Low income' then 1 end) * 1.0 as "Low income",
+  count(case when `Income Group` is null then 1 end) * 1.0 as "Other",
+  count(*) * 1.0 as "Total"
 from
   wdi_country
 group by
