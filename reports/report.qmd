@@ -648,6 +648,15 @@ from
   wdi_country
 group by
   `Income Group`
+
+union all
+
+select
+  'Total',
+  count(*),
+  100.0
+from
+  wdi_country
 order by
   num_countries desc
 """)
