@@ -396,12 +396,11 @@ order by
 run_sql_and_return_html(cnx,"""
 select
   Region,
-  count(case when `Income Group` = 'High income' then 1 end) * 1.0 as "High income",
-  count(case when `Income Group` = 'Upper middle income' then 1 end) * 1.0 as "Upper middle income",
-  count(case when `Income Group` = 'Lower middle income' then 1 end) * 1.0 as "Lower middle income",
-  count(case when `Income Group` = 'Low income' then 1 end) * 1.0 as "Low income",
-  count(case when `Income Group` is null then 1 end) * 1.0 as "Other",
-  count(*) * 1.0 as "Total"
+  count(case when `Income Group` = 'High income' then 1 end) as "High income",
+  count(case when `Income Group` = 'Upper middle income' then 1 end) as "Upper middle income",
+  count(case when `Income Group` = 'Lower middle income' then 1 end) as "Lower middle income",
+  count(case when `Income Group` = 'Low income' then 1 end) as "Low income",
+  count(*) as "Total"
 from
   wdi_country
 group by
@@ -409,6 +408,7 @@ group by
 order by
   Region
 """)
+
 
 ```
 
@@ -639,24 +639,22 @@ order by
 
 ## (This is much simpler than task 20!)
 
+
 run_sql_and_return_html(cnx,"""
+with total as (
+  select count(*) as total_count from wdi_country
+)
 select
   `Income Group`,
   count(*) as num_countries,
-  round(count(*) * 100.0 / (select count(*) from wdi_country), 1) as pct_of_total
+  round(count(*) * 100.0 / total.total_count, 1) as pct_of_total,
+  total.total_count as total_countries
 from
-  wdi_country
+  wdi_country, total
+where
+  `Income Group` is not null
 group by
-  `Income Group`
-
-union all
-
-select
-  'Total',
-  count(*),
-  100.0
-from
-  wdi_country
+  `Income Group`, total.total_count
 order by
   num_countries desc
 """)
