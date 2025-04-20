@@ -313,12 +313,13 @@ select
   Region,
   `Income Group`
 from
-  world_bank_data.wdi_country
+  wdi_country
 where
   `Income Group` is null
 order by
   `Short Name`
 """)
+
 
 ```
 
@@ -399,8 +400,8 @@ select
   count(case when `Income Group` = 'Upper middle income' then 1 end) as "Upper middle income",
   count(case when `Income Group` = 'Lower middle income' then 1 end) as "Lower middle income",
   count(case when `Income Group` = 'Low income' then 1 end) as "Low income",
-  count(case when `Income Group` is null then 1 end) as "Unknown",
-  count(*) as total
+  count(case when `Income Group` is null then 1 end) as "Other",
+  count(*) as "Total"
 from
   wdi_country
 group by
@@ -500,18 +501,19 @@ order by
 
 run_sql_and_return_html(cnx,"""
 with regions as (
-  select distinct Region from world_bank_data.wdi_country
+  select distinct Region from wdi_country
 ),
 income_groups as (
-  select distinct `Income Group` from world_bank_data.wdi_country
+  select distinct `Income Group` from wdi_country
 ),
 all_combinations as (
   select r.Region, i.`Income Group`
-  from regions r cross join income_groups i
+  from regions r
+  cross join income_groups i
 ),
-actuals as (
+existing_combinations as (
   select distinct Region, `Income Group`
-  from world_bank_data.wdi_country
+  from wdi_country
 )
 select
   a.Region,
@@ -519,11 +521,12 @@ select
   'Missing' as status
 from
   all_combinations a
-left join actuals act
-  on a.Region = act.Region and a.`Income Group` = act.`Income Group`
+left join existing_combinations e
+  on a.Region = e.Region and a.`Income Group` = e.`Income Group`
 where
-  act.Region is null
-order by a.Region, a.`Income Group`
+  e.Region is null
+order by
+  a.Region, a.`Income Group`
 """)
 
 ```
@@ -640,15 +643,14 @@ run_sql_and_return_html(cnx,"""
 select
   `Income Group`,
   count(*) as num_countries,
-  round(count(*) * 100.0 / (select count(*) from world_bank_data.wdi_country), 1) as pct_of_total
+  round(count(*) * 100.0 / (select count(*) from wdi_country), 1) as pct_of_total
 from
-  world_bank_data.wdi_country
+  wdi_country
 group by
   `Income Group`
 order by
   num_countries desc
 """)
-
 
 ```
 
