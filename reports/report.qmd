@@ -92,17 +92,16 @@ List all non-countries.
 
 run_sql_and_return_html(cnx,"""
 select
-  `Country Code`,
-  `Short Name`,
-  Region,
-  `Income Group`
+  `Short Name`
 from
   world_bank_data.wdi_country
 where
   Region is null
-  or Region = 'Aggregates'
-  or `Short Name` = 'World'
+     or Region = 'Aggregates'
+     or `Short Name` = 'World'
+order by `Short Name`
 """)
+
 
 ```
 
@@ -319,9 +318,7 @@ where
   `Income Group` is null
 order by
   `Short Name`
-limit 1
 """)
-
 
 ```
 
@@ -334,11 +331,11 @@ limit 1
 ## NOTE - if you get this wrong, all subsequent tables will be wrong!
 
 execute_ddl(cnx,"""
-update world_bank_data.wdi_country
+update wdi_country
 set `Income Group` = 'High income'
-where `Short Name` = 'Venezuela, RB'
+where `Country Code` = 'VEN';
+commit;
 """)
-
 
 ```
 ```{python}
@@ -347,13 +344,13 @@ where `Short Name` = 'Venezuela, RB'
 run_sql_and_return_html(cnx,"""
 select
   `Short Name`,
-  `Income Group`
+  `Income Group`,
+  Region
 from
-  world_bank_data.wdi_country
+  wdi_country
 where
-  `Short Name` = 'Venezuela, RB'
+  `Country Code` = 'VEN'
 """)
-
 
 ```
 
@@ -405,7 +402,7 @@ select
   count(case when `Income Group` is null then 1 end) as "Unknown",
   count(*) as total
 from
-  world_bank_data.wdi_country
+  wdi_country
 group by
   Region
 order by
